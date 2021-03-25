@@ -155,7 +155,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                     msg_motion.x = 0 # m
                     msg_motion.y = 0 # m
                     msg_motion.z = 0 # m
-                    msg_motion.o = (i*36)*DEG2RAD # orientation in z (rad)
+                    msg_motion.o = ((i+1)*36)*DEG2RAD # orientation in z (rad)
                     pub_motion.publish(msg_motion)
                 
                 # publish results to rviz
@@ -169,6 +169,8 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 msg_pose_orientation.w = tmp[3]
                 pub_pose.publish(msg_pose)
                 
+                print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
+                print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)
                 # --- Iterate ---
                 et = rospy.get_time() - t
                 t += ITERATION_PERIOD
