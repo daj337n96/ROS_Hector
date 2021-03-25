@@ -111,6 +111,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
         
             # --- Publish state ---
             msg_state.data = STATE_TURTLE
+
             pub_state.publish(msg_state)
             
             # --- Publish target ---
