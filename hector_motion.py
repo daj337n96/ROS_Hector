@@ -150,12 +150,13 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 # separately and when available
                 pass
                 
-                # --- Publish motion ---
-                msg_motion.x = 0 # m
-                msg_motion.y = 0 # m
-                msg_motion.z = 0 # m
-                msg_motion.o = 0 # orientation in z (rad)
-                pub_motion.publish(msg_motion)
+                for i in range(10):
+                    # --- Publish motion ---
+                    msg_motion.x = 0 # m
+                    msg_motion.y = 0 # m
+                    msg_motion.z = 0 # m
+                    msg_motion.o = (i*36)*DEG2RAD # orientation in z (rad)
+                    pub_motion.publish(msg_motion)
                 
                 # publish results to rviz
                 msg_pose_position.x = msg_motion.x
