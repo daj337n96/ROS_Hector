@@ -81,29 +81,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
         if rospy.get_time() > t:
             # --- FSM ---
             # check if close enough to targets and goals with CLOSE_ENOUGH
-            ## from project 1   
-            if check_distance: # check if close enough to target
-                    Di = target_x - msg_motion.x
-				Dj = target_y - msg_motion.y
-				if Di*Di + Dj*Dj <= CLOSE_ENOUGH_SQ:# if target reached
-					target_idx += 1
-					if target_idx < num_targets:# still have targets remaining
-						previous_x.append(target_x)
-						previous_y.append(target_y)
-						target_x += Dx
-						target_y += Dy
-	
-						msg_target_position.x = target_x
-						msg_target_position.y = target_y
-						pub_target.publish(msg_target) # publish new target
-					else:
-						turnpt_idx -= 1
-						if turnpt_idx >= 0:
-							update_turnpoint = True 
-						else:
-							update_goalpoint = True
-                ## from project 1    
-                    
+         
             # generate targets with TARGET_SEPARATION
             
             # fly to CRUISE_ALTITUDE (you decide value) after takeoff
