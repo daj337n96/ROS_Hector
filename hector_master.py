@@ -86,9 +86,20 @@ def master(sx=2., sy=2., gx=2., gy=2.):
             
             # fly to CRUISE_ALTITUDE (you decide value) after takeoff
             # use STATE_... constants for states
-        
+            switch(state):
+                case STATE_TAKEOFF:
+                    # Add if else and state
+                case STATE_TURTLE:
+                    # Add if else and state
+                case STATE_GOAL:
+                    # Add if else and state
+                case STATE_BASE:
+                    # Add if else and state
+                case STATE_LAND:
+                    # Add if else and state
+                    
             # --- Publish state ---
-            msg_state.data = STATE_TURTLE
+            msg_state.data = state
             pub_state.publish(msg_state)
             
             # --- Publish target ---
