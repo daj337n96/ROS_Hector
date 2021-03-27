@@ -98,11 +98,17 @@ def move():
             ry = msg_motion.y
             rz = msg_motion.z
             ro = msg_motion.o
+            print("[msg_motion][rx,ry,rz,ro]")
+            print(str(msg_motion.x)+' '+str(msg_motion.y)+' '+str(msg_motion.z)+' '+str(msg_motion.o))
+            print("=================================")
             
             # --- Get target ---
             tx = msg_target.x
             ty = msg_target.y
             tz = msg_target.z
+            print("[msg_target][x,y,z]")
+            print(str(msg_target.x)+' '+str(msg_target.y)+' '+str(msg_target.z))
+            print("=================================")
             
             # --- Anti windup ---
             if (prev_tx != tx):
