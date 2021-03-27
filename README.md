@@ -5,14 +5,14 @@ Master controls the STATE and sets the target to go to (pink dot)
 Motion deals with EKF predict and correction 
 
 ############################### hector_master ############################################
-publishes targets
+publishes targets to move to
 
 /hector/target
 /hector/state
 /hector/stop
 
 ############################### hector_motion ############################################
-publishes the motion 
+publishes the motion that hector is making
 
 /hector/motion
 /hector/motion_pose for RViz
