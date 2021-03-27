@@ -122,12 +122,12 @@ def move():
                 prev_tz = tz    
             
             # --- Get Errors ---
-            Dx = tx - rx
-            Dy = ty - ry
-            err_o = atan2(Dy, Dx) - ro
-            err_r = sqrt(Dx*Dx + Dy*Dy)
-            err_x = err_r * cos(err_o)
-            err_y = err_r * sin(err_o) 
+            Dx = tx - rx # based on target.x and motion.x
+            Dy = ty - ry # based on target.y and motion.y
+            err_o = atan2(Dy, Dx) - ro # error of the orientation based on the errors of x & y
+            err_r = sqrt(Dx*Dx + Dy*Dy) # error of the position based on the errors of x & y
+            err_x = err_r * cos(err_o) # error of x based on position error
+            err_y = err_r * sin(err_o) # error of y based on position error
             
             # --- PID for x ---
             accum_err_x += err_x
