@@ -7,6 +7,9 @@ Motion deals with EKF predict and correction
 ############################### hector_master ############################################
 publishes targets to move to
 
+When GROUND_TRUTH = False the motion published needs to be taken from EKF not set, otherwise the drone would not move
+Need to settle EKF first 
+
 /hector/target
 /hector/state
 /hector/stop
