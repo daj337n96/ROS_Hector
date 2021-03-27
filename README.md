@@ -4,16 +4,14 @@ Master controls the STATE and sets the target to go to (pink dot)
     Subscribes to Motion since it overlooks everything 
 Motion deals with EKF predict and correction 
 
-###########################################################################
-hector_master:
+###############################_hector_master_############################################
 publishes targets
 
 /hector/target
 /hector/state
 /hector/stop
 
-##########################################################################
-hector_motion:
+###############################_hector_motion_############################################
 publishes the motion 
 
 /hector/motion
