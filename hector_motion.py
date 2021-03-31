@@ -27,6 +27,7 @@ def subscribe_true(msg):
     tmp = msg.pose.orientation
     rbt_true[3] = euler_from_quaternion([tmp.x, tmp.y, tmp.z, tmp.w])[2]
     
+# ================================ Sensors ===========================================    
 rbt_gps = [False, False, False, False]
 def subscribe_gps(msg):
     rbt_gps[0] = msg.latitude
@@ -133,13 +134,15 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         pass
         
         # --- EKF inits --- 
-        ''' EKF S.S Model [[P], [V]] = [[0,0], [0,0]]*[[P_k-1], [V_k-1]] + [[0], [0]]*(a + sigma_w)
-            EFK_MEASUREMENT = [1, 0]*[[P], [V]] + sigma_v '''
+        # EKF S.S Model:  PROCESS = [[0,0], [0,0]]*[[P_k-1], [V_k-1]] + [[0], [0]]*(a + sigma_w)
+        #                 MEASUREMENT = [1, 0]*[[P], [V]] + sigma_v 
+        
         # Do separate channels for x,y,z,o --> 4 channels in total
-        # STATE_X = [[Px], [Vx]]
-        # STATE_Y = [[Py], [Vy]]
-        # STATE_Z = [[Pz], [Vz]]
-        # STATE_O = [[Po], [Vo]]
+        # STATE_X = [[Px], [Vx]], previous_x
+        # STATE_Y = [[Py], [Vy]], previous_y
+        # STATE_Z = [[Pz], [Vz]], previous_z
+        # STATE_O = [[Po], [Vo]], previous_o
+        
         # always initialise arrays in two dimensions using [[ . ]]:
         # e.g. X = array([[rx0], [0.]]) # see above for rx0
         # e.g. Px = [[0, 0], [0, 0]]
@@ -151,6 +154,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
             if rospy.get_time() > t:
                 # --- Prediction: from IMU ---
                 # x, y, z, o
+                # previous_x = take from subscribed rbt_imu[0] 
+                # previous_z = rbt_imu[1] 
+                # previous_y = rbt_imu[2] 
+                # previous_o = maybe estimated based on the angular velocity?
                 pass
                 
                 # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
