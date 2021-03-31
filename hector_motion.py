@@ -133,6 +133,13 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         pass
         
         # --- EKF inits --- 
+        ''' EKF S.S Model [[P], [V]] = [[0,0], [0,0]]*[[P_k-1], [V_k-1]] + [[0], [0]]*(a + sigma_w)
+            EFK_MEASUREMENT = [1, 0]*[[P], [V]] + sigma_v '''
+        # Do separate channels for x,y,z,o --> 4 channels in total
+        # STATE_X = [[Px], [Vx]]
+        # STATE_Y = [[Py], [Vy]]
+        # STATE_Z = [[Pz], [Vz]]
+        # STATE_O = [[Po], [Vo]]
         # always initialise arrays in two dimensions using [[ . ]]:
         # e.g. X = array([[rx0], [0.]]) # see above for rx0
         # e.g. Px = [[0, 0], [0, 0]]
