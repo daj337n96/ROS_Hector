@@ -157,7 +157,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 # previous_x = take from subscribed rbt_imu[0] 
                 # previous_z = rbt_imu[1] 
                 # previous_y = rbt_imu[2] 
-                # previous_o = maybe estimated based on the angular velocity?
+                # previous_o = rbt_magnet_x/y for position, rbt_imu[3] for speed 
                 pass
                 
                 # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
