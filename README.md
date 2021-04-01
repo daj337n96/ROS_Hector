@@ -19,3 +19,10 @@ publishes the motion that hector is making
 EKF should comapre taregt with motion to decide actual movement
 /hector/motion
 /hector/motion_pose for RViz
+
+
+1/4/21:
+create def for Predicted_x, prev_x etc
+formula A is to predict the state k based on k-1
+formula B is to predict the covariance k based on k-1
+use the model as fd and Fk
