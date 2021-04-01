@@ -81,28 +81,55 @@ def master(sx=2., sy=2., gx=2., gy=2.):
         if rospy.get_time() > t:
             # --- FSM ---
             # check if close enough to targets and goals with CLOSE_ENOUGH
-         
+            ## from project 1   
+            if check_distance: # check if close enough to target
+                    Di = target_x - msg_motion.x
+                    Dj = target_y - msg_motion.y
+				if Di*Di + Dj*Dj <= CLOSE_ENOUGH_SQ:# if target reached
+					target_idx += 1
+					if target_idx < num_targets:# still have targets remaining
+						previous_x.append(target_x)
+						previous_y.append(target_y)
+						target_x += Dx
+						target_y += Dy
+	
+						msg_target_position.x = target_x
+						msg_target_position.y = target_y
+						pub_target.publish(msg_target) # publish new target
+					else:
+						turnpt_idx -= 1
+						if turnpt_idx >= 0:
+							update_turnpoint = True 
+						else:
+							update_goalpoint = True
+                ## from project 1    
+                    
             # generate targets with TARGET_SEPARATION
             
             # fly to CRUISE_ALTITUDE (you decide value) after takeoff
             # use STATE_... constants for states
-            switch(state):
-                case STATE_TAKEOFF:
-                    # Add if else and state
-                case STATE_TURTLE:
-                    # Add if else and state
-                case STATE_GOAL:
-                    # Add if else and state
-                case STATE_BASE:
-                    # Add if else and state
-                case STATE_LAND:
-                    # Add if else and state
+            if STATE_TAKEOFF:
+            # Add if else and state
+                state = STATE_TURTLE
+            if STATE_TURTLE:
+                # Add if else and state
+            if STATE_GOAL:
+                # Add if else and state
+            if STATE_BASE:
+                # Add if else and state
+            if STATE_LAND:
+                # Add if else and state
+                
                     
             # --- Publish state ---
             msg_state.data = state
             pub_state.publish(msg_state)
             
             # --- Publish target ---
+            target_x = 0
+            target_y = 0
+            target_z = 2
+            
             msg_target_position.x = target_x
             msg_target_position.y = target_y
             msg_target_position.z = target_z
