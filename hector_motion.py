@@ -103,6 +103,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
          
     print('=== [HEC MOTION] Initialised ===')
     
+    '''def predicted_state(predicted_x):
+	predicted_x.p = []
+	predicted_x = [[predicted_x.p], [predicted_x.v]]'''	
+    
     # ---------------------------------- LOOP ----------------------------------------------
     if USE_GROUND_TRUTH:
         t = rospy.get_time()
@@ -130,36 +134,33 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 t += ITERATION_PERIOD
     else:
         ##########################################################
-        delta_t = ITERATION_PERIOD
-        P_x, P_y, P_z, P_o = 0
-        V_x, V_y, V_z, V_o = 0
-        Measured_x, Measured_y, Measured_z, Measured_o = 0
-        
         # --- build sensor functions to calculate conversions ---
         pass
         
         # --- EKF inits --- 
         # EKF S.S Model:  PROCESS = [[0,0], [0,0]]*[[P_k-1], [V_k-1]] + [[0], [0]]*(a + sigma_w)
         #                 MEASUREMENT = [1, 0]*[[P], [V]] + sigma_v 
-        
-        # Do separate channels for x,y,z,o --> 4 channels in total
-        # STATE_X = [[Px], [Vx]], previous_x
-        # STATE_Y = [[Py], [Vy]], previous_y
-        # STATE_Z = [[Pz], [Vz]], previous_z
-        # STATE_O = [[Po], [Vo]], previous_o
-        
-        # Not sure if the noise should be different for each channel
-        # --- EKF process for x, y, z, o ---
-        [[P_x], [V_x]] = [[1, delta_t], [0, 1]] * [[P_x_prev], [V_x_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
-        [[P_y], [V_y]] = [[1, delta_t], [0, 1]] * [[P_y_prev], [V_y_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
-        [[P_z], [V_z]] = [[1, delta_t], [0, 1]] * [[P_z_prev], [V_z_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
-        [[P_o], [V_o]] = [[1, delta_t], [0, 1]] * [[P_o_prev], [V_o_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
-        
-        # --- EKF measurements for x, y, z, o ---
-        Measured_x = [1, 0] [[P_x], [V_x]] + sigma_v
-        Measured_y = [1, 0] [[P_y], [V_y]] + sigma_v
-        Measured_z = [1, 0] [[P_z], [V_z]] + sigma_v
-        Measured_o = [1, 0] [[P_o], [V_o]] + sigma_v        
+
+        delta_t = ITERATION_PERIOD
+        a_w = 1
+        kalman_gainK = 0 # kf(k)
+        predicted_x = [[0], [0]] # X(k|k-1)
+        predicted_y = [[0], [0]] 
+        predicted_z = [[0], [0]] 
+        predicted_o = [[0], [0]] 
+
+        process_x = [[P_x], [V_x]] = [[0], [0]] # process model/transition model
+        process_y = [[P_y], [V_y]] = [[0], [0]]
+        process_z = [[P_z], [V_z]] = [[0], [0]]
+        process_o = [[P_o], [V_o]] = [[0], [0]]
+
+        previous_x = [[P_x_prev], [V_x_prev]] = [[0], [0]] # measurement model
+        previous_y = [[P_y_prev], [V_y_prev]] = [[0], [0]]
+        previous_z = [[P_z_prev], [V_z_prev]] = [[0], [0]]
+        previous_o = [[P_o_prev], [V_o_prev]] = [[0], [0]]
+
+
+	    #est_x = 0.2*(predicted_x) + 0.8*(Measured_x)
         
         # always initialise arrays in two dimensions using [[ . ]]:
         # e.g. X = array([[rx0], [0.]]) # see above for rx0
@@ -168,46 +169,71 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         
         # --- Loop EKF ---
         t = rospy.get_time()
-        while not rospy.is_shutdown() and not msg_master.stop:
+        while not rospy.is_shutdown() and not msg_stop: #msg_master.stop:
             if rospy.get_time() > t:
-                # --- Prediction: from IMU ---
-                # x, y, z, o
-                # previous_x = take from subscribed rbt_imu[0] 
-                # previous_z = rbt_imu[1] 
-                # previous_y = rbt_imu[2] 
-                # previous_o = rbt_magnet_x/y for position, rbt_imu[3] for speed 
-                pass
-                
-                # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
-                # separately and when available
-                pass
-                
-                for i in range(10):
-                    # --- Publish motion ---
-                    msg_motion.x = 0 # m
-                    msg_motion.y = 0 # m
-                    msg_motion.z = 0 # m
-                    msg_motion.o = ((i+1)*36)*DEG2RAD # orientation in z (rad)
-                    pub_motion.publish(msg_motion)
-                
-                # publish results to rviz
-                msg_pose_position.x = msg_motion.x
-                msg_pose_position.y = msg_motion.y
-                msg_pose_position.z = msg_motion.z
-                tmp = quaternion_from_euler(0, 0, msg_motion.o)
-                msg_pose_orientation.x = tmp[0]
-                msg_pose_orientation.y = tmp[1]
-                msg_pose_orientation.z = tmp[2]
-                msg_pose_orientation.w = tmp[3]
-                pub_pose.publish(msg_pose)
-                
-                print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
-                print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)
-                # --- Iterate ---
-                et = rospy.get_time() - t
-                t += ITERATION_PERIOD
-                if et > ITERATION_PERIOD:
-                    print('[HEC MOTION] {}ms OVERSHOOT'.format(int(et*1000)))
+        	# Do separate channels for x,y,z,o --> 4 channels in total        
+		# Not sure if the noise should be different for each channel
+		# --- EKF process for x, y, z, o ---
+		sigma_W = array([[0.5*delta_t*delta_t], [delta_t]])
+
+		process_x = matmul([[1, delta_t], [0, 1]], previous_x) + sigma_W * a_w
+		process_y = matmul([[1, delta_t], [0, 1]], previous_y) + sigma_W * a_w
+		process_z = matmul([[1, delta_t], [0, 1]], previous_z) + sigma_W * a_w
+		process_o = matmul([[1, delta_t], [0, 1]], previous_o) + sigma_W * a_w
+		print("=================================")
+		print("[process_x]" + str(process_x))
+		
+		# --- EKF measurements for x, y, z, o ---
+		Measured_x = matmul([1, 0], process_x) #+ sigma_v
+		Measured_y = matmul([1, 0], process_y) #+ sigma_v
+		Measured_z = matmul([1, 0], process_z) #+ sigma_v
+		Measured_o = matmul([1, 0], process_o) #+ sigma_v     
+		print("[Measured_x]" + str(Measured_x))
+
+        # --- Prediction: from IMU ---
+        # x, y, z, o
+		predicted_x[0] = previous_x[0] + array(previous_x[1])* delta_t + 0.5*a_w*delta_t**2 # for expected P_x(k|k-1)
+		#predicted_x[1] = float(previous_x[1]) + a_w*delta_t # for expected V_x(k|k-1)
+		print("=================================")
+		print("[predicted_x] " + str(predicted_x))
+		print("[previous_x] " + str(previous_x[1]))
+		print("					")
+        # previous_x = take from subscribed rbt_imu[0] 
+        # previous_z = rbt_imu[1] 
+        # previous_y = rbt_imu[2] 
+        # previous_o = rbt_magnet_x/y for position, rbt_imu[3] for speed 
+        pass
+
+        # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
+        # separately and when available
+        pass
+
+        #for i in range(10):
+        # --- Publish motion ---
+        msg_motion.x = rbt_true[0] # m
+        msg_motion.y = rbt_true[1] # m
+        msg_motion.z = rbt_true[2] # m
+        msg_motion.o = rbt_true[3] # orientation in z (rad)
+        pub_motion.publish(msg_motion)
+
+        # publish results to rviz
+        msg_pose_position.x = msg_motion.x
+        msg_pose_position.y = msg_motion.y
+        msg_pose_position.z = msg_motion.z
+        tmp = quaternion_from_euler(0, 0, msg_motion.o)
+        msg_pose_orientation.x = tmp[0]
+        msg_pose_orientation.y = tmp[1]
+        msg_pose_orientation.z = tmp[2]
+        msg_pose_orientation.w = tmp[3]
+        pub_pose.publish(msg_pose)
+
+        print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
+        print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)
+        # --- Iterate ---
+        et = rospy.get_time() - t
+        t += ITERATION_PERIOD
+        if et > ITERATION_PERIOD:
+            print('[HEC MOTION] {}ms OVERSHOOT'.format(int(et*1000)))
                     
                     
         ##########################################################
@@ -222,3 +248,4 @@ if __name__ == '__main__':
         pass
         
     print('=== [HEC MOTION] Terminated ===')
+
