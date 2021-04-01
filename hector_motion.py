@@ -130,6 +130,11 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 t += ITERATION_PERIOD
     else:
         ##########################################################
+        delta_t = ITERATION_PERIOD
+        P_x, P_y, P_z, P_o = 0
+        V_x, V_y, V_z, V_o = 0
+        Measured_x, Measured_y, Measured_z, Measured_o = 0
+        
         # --- build sensor functions to calculate conversions ---
         pass
         
