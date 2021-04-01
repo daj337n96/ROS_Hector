@@ -145,10 +145,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         
         # Not sure if the noise should be different for each channel
         # --- EKF process for x, y, z, o ---
-        [[P_x], [V_x]] = [[1, delta_t], [0, 1]] * [[P_x_prev], [V_x_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a+w]
-        [[P_y], [V_y]] = [[1, delta_t], [0, 1]] * [[P_y_prev], [V_y_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a+w]
-        [[P_z], [V_z]] = [[1, delta_t], [0, 1]] * [[P_z_prev], [V_z_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a+w]
-        [[P_o], [V_o]] = [[1, delta_t], [0, 1]] * [[P_o_prev], [V_o_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a+w]
+        [[P_x], [V_x]] = [[1, delta_t], [0, 1]] * [[P_x_prev], [V_x_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
+        [[P_y], [V_y]] = [[1, delta_t], [0, 1]] * [[P_y_prev], [V_y_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
+        [[P_z], [V_z]] = [[1, delta_t], [0, 1]] * [[P_z_prev], [V_z_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
+        [[P_o], [V_o]] = [[1, delta_t], [0, 1]] * [[P_o_prev], [V_o_prev]] + [[0.5*delta_t*delta_t], [delta_t]] * [a_w]
         
         # --- EKF measurements for x, y, z, o ---
         Measured_x = [1, 0] [[P_x], [V_x]] + sigma_v
