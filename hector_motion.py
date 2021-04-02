@@ -168,71 +168,71 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         while not rospy.is_shutdown() and not msg_stop: #msg_master.stop:
             if rospy.get_time() > t:
         	# Do separate channels for x,y,z,o --> 4 channels in total        
-		# Not sure if the noise should be different for each channel
-		
-		# --- EKF process for x, y, z, o ---
-		process.x = matmul([[1, delta_t], [0, 1]], previous.x) + sigma_W * a_w
-		process.y = matmul([[1, delta_t], [0, 1]], previous.y) + sigma_W * a_w
-		process.z = matmul([[1, delta_t], [0, 1]], previous.z) + sigma_W * a_w
-		process.o = matmul([[1, delta_t], [0, 1]], previous.o) + sigma_W * a_w
-		'''print("=================================")
-		print("[process_x]" , process.x)'''
-		
-		# --- EKF measurements for x, y, z, o ---
-		measured.x = matmul([1, 0], process.x) #+ sigma_v
-		measured.y = matmul([1, 0], process.y) #+ sigma_v
-		measured.z = matmul([1, 0], process.z) #+ sigma_v
-		measured.o = matmul([1, 0], process.o) #+ sigma_v     
-		'''print("[Measured_x]", measured.x)'''
+			# Not sure if the noise should be different for each channel
+			
+			# --- EKF process for x, y, z, o ---
+			process.x = matmul([[1, delta_t], [0, 1]], previous.x) + sigma_W * a_w
+			process.y = matmul([[1, delta_t], [0, 1]], previous.y) + sigma_W * a_w
+			process.z = matmul([[1, delta_t], [0, 1]], previous.z) + sigma_W * a_w
+			process.o = matmul([[1, delta_t], [0, 1]], previous.o) + sigma_W * a_w
+			'''print("=================================")
+			print("[process_x]" , process.x)'''
+			
+			# --- EKF measurements for x, y, z, o ---
+			measured.x = matmul([1, 0], process.x) #+ sigma_v
+			measured.y = matmul([1, 0], process.y) #+ sigma_v
+			measured.z = matmul([1, 0], process.z) #+ sigma_v
+			measured.o = matmul([1, 0], process.o) #+ sigma_v     
+			'''print("[Measured_x]", measured.x)'''
 
-                # --- Prediction: from IMU ---
-                # x, y, z, o
-		# for x
-		predicted.x[0] = previous.x[0] + array(previous.x[1])* delta_t + 0.5*a_w*delta_t**2 # for expected P_x(k|k-1)
-		#predicted.x[1] = (previous.x[1]) + a_w*delta_t # for expected V_x(k|k-1)
-		#filtred_covar.x = matmul((previous.x-predicted.x), trasnpose(previous.x-predicted.x))
-		#predicted_covar.x = matmul(process.x,filtred_covar.x,transpose(process.x)) + matmul(sigma_W, transpose(sigma_W))*IMU_NX # varinace = covariance since only 1 param
-		'''print("=================================")
-		print("[predicted_x] ", predicted.x)
-		print("[previous_x] ", previous.x)
-		print("					")'''
+		            # --- Prediction: from IMU ---
+		            # x, y, z, o
+			# for x
+			predicted.x[0] = previous.x[0] + array(previous.x[1])* delta_t + 0.5*a_w*delta_t**2 # for expected P_x(k|k-1)
+			#predicted.x[1] = (previous.x[1]) + a_w*delta_t # for expected V_x(k|k-1)
+			#filtred_covar.x = matmul((previous.x-predicted.x), trasnpose(previous.x-predicted.x))
+			#predicted_covar.x = matmul(process.x,filtred_covar.x,transpose(process.x)) + matmul(sigma_W, transpose(sigma_W))*IMU_NX # varinace = covariance since only 1 param
+			'''print("=================================")
+			print("[predicted_x] ", predicted.x)
+			print("[previous_x] ", previous.x)
+			print("					")'''
 
-                # previous_x = take from subscribed rbt_imu[0] 
-                # previous_z = rbt_imu[1] 
-                # previous_y = rbt_imu[2] 
-                # previous_o = rbt_magnet_x/y for position, rbt_imu[3] for speed 
-                pass
-                
-                # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
-                # separately and when available
-                pass
-                
-                #for i in range(10):
+            # previous_x = take from subscribed rbt_imu[0] 
+            # previous_z = rbt_imu[1] 
+            # previous_y = rbt_imu[2] 
+            # previous_o = rbt_magnet_x/y for position, rbt_imu[3] for speed 
+            pass
+            
+            # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
+            # separately and when available
+            pass
+            
+            #for i in range(10):
                 # --- Publish motion ---
-            	msg_motion.x = rbt_true[0] # m
-            	msg_motion.y = rbt_true[1] # m
-            	msg_motion.z = rbt_true[2] # m
-            	msg_motion.o = rbt_true[3] # orientation in z (rad)
-            	pub_motion.publish(msg_motion)
-                
-                # publish results to rviz
-                msg_pose_position.x = msg_motion.x
-                msg_pose_position.y = msg_motion.y
-                msg_pose_position.z = msg_motion.z
-                tmp = quaternion_from_euler(0, 0, msg_motion.o)
-                msg_pose_orientation.x = tmp[0]
-                msg_pose_orientation.y = tmp[1]
-                msg_pose_orientation.z = tmp[2]
-                msg_pose_orientation.w = tmp[3]
-                pub_pose.publish(msg_pose)
-                
-                '''print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
-                print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)'''
-                # --- Iterate ---
-                et = rospy.get_time() - t
-                t += ITERATION_PERIOD
-                if et > ITERATION_PERIOD:
-                    print('[HEC MOTION] {}ms OVERSHOOT'.format(int(et*1000)))
+        	msg_motion.x = rbt_true[0] # m
+        	msg_motion.y = rbt_true[1] # m
+        	msg_motion.z = rbt_true[2] # m
+        	msg_motion.o = rbt_true[3] # orientation in z (rad)
+        	pub_motion.publish(msg_motion)
+            
+            # publish results to rviz
+            msg_pose_position.x = msg_motion.x
+            msg_pose_position.y = msg_motion.y
+            msg_pose_position.z = msg_motion.z
+            tmp = quaternion_from_euler(0, 0, msg_motion.o)
+            msg_pose_orientation.x = tmp[0]
+            msg_pose_orientation.y = tmp[1]
+            msg_pose_orientation.z = tmp[2]
+            msg_pose_orientation.w = tmp[3]
+            pub_pose.publish(msg_pose)
+            
+            '''print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
+            print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)'''
+            # --- Iterate ---
+            et = rospy.get_time() - t
+            t += ITERATION_PERIOD
+            if et > ITERATION_PERIOD:
+                print('[HEC MOTION] {}ms OVERSHOOT'.format(int(et*1000)))
                     
                     
         ##########################################################
