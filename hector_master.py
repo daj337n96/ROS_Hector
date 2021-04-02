@@ -71,6 +71,9 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 	
 	state = STATE_TAKEOFF
 	check_distance = False
+	need_trajectory = False
+	local_targets_x = 0
+	local_targets_y = 0
 	
 	while (height is None or msg_motion is None or turtle_stop is None or \
 		turtle_motion is None or rospy.get_time() == 0) and not rospy.is_shutdown():
@@ -85,29 +88,31 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 			# --- FSM ---
 			print('==================================')
 			print('-----Hector Motion-----')
-			print('hector motion x= ',msg_motion.x)
+			print('hector motion x= ',msg_motion.x) # the actual motion of Hector
 			print('hector motion y= ',msg_motion.y)
 			print('hector motion z= ',msg_motion.z)
 			print('hector motion w= ',msg_motion.w)
 			print('hector motion o= ',msg_motion.o)
 			print('-----Turtle Motion-----')
-			print('turtle motion x= ',turtle_motion.x)
+			print('turtle motion x= ',turtle_motion.x) # the actual motion of Turtle
 			print('turtle motion y= ',turtle_motion.y)
 			print('turtle stop value= ',turtle_stop)
 			print('-----Current State-----')
-			# check if close enough to targets and goals with CLOSE_ENOUGH
-			if check_distance:# check if close enough to target
+
+			if check_distance: # check if close enough to target
 				Di = target_x - msg_motion.x
 				Dj = target_y - msg_motion.y
-				Dk = target_z - msg_motion.z
+				Dk = target_z - msg_motion.z # do we need to check for z?
 				if Di*Di + Dj*Dj + Dk*Dk<= CLOSE_ENOUGH_SQ:# if target reached
 					if state == STATE_TAKEOFF:
 						state = STATE_TURTLE
+						check_distance = False
 					elif turtle_stop == False:
 						if state == STATE_TURTLE:
 							state = STATE_GOAL
 						elif state == STATE_GOAL:
 							state = STATE_TURTLE
+						check_distance = False
 					elif turtle_stop == True: 
 						if state == STATE_GOAL:
 							state = STATE_TURTLE
@@ -115,6 +120,26 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 							state = STATE_BASE
 						elif state == STATE_BASE:
 							state = STATE_LAND
+						check_distance = False
+
+			if need_trajectory: # target seperation
+				Di = target_x - msg_motion.x
+				Dj = target_y - msg_motion.y
+				Dk = target_z - msg_motion.z # don't think z is needed
+
+				num_targets = sqrt(Di*Di + Dj*Dj) / TARGET_SEPARATION # find number of points
+				# local distance to cover
+				Di /= num_targets
+				Dj /= num_targets
+				# local target is incremented which would be given to target_x/y to publish
+				local_targets_x += Di
+				local_targets_y += Dj
+				# target is now the local target 
+				target_x = local_targets_x
+				target_y = local_targets_y
+
+				need_trajectory = False # it will now be published 
+				check_distance = True # and check distance will be done next
 							
 			# use STATE_... constants for states
 			if state == STATE_TAKEOFF: # takeoff from hector's base
@@ -122,27 +147,32 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 				target_x = sx
 				target_y = sy
 				target_z = CRUISE_ALTITUDE
-				check_distance = True
+				# get trajectory first before checking distance & proceeding to other states
+				need_trajectory = True
 			elif state == STATE_TURTLE: # fly to turtle
 				print('state = STATE_TURTLE')
-				target_x = turtle_motion.x
+				target_x = turtle_motion.x 
 				target_y = turtle_motion.y
 				target_z = CRUISE_ALTITUDE
+				need_trajectory = True 
 			elif state == STATE_GOAL: # fly to turtle's end goal
 				print('state = STATE_GOAL')
 				target_x = gx
 				target_y = gy
 				target_z = CRUISE_ALTITUDE
+				need_trajectory = True
 			elif state == STATE_BASE: # fly to hector's base
 				print('state = STATE_BASE')
 				target_x = sx
 				target_y = sy
 				target_z = CRUISE_ALTITUDE
+				need_trajectory = True
 			elif state == STATE_LAND: # land at hector's base
 				print('state = STATE_LAND')
 				target_x = sx
 				target_y = sy
 				target_z = 0
+				need_trajectory = True
 				
 			# --- Publish state ---
 			msg_state.data = state
@@ -154,6 +184,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 			msg_target_position.z = target_z
 			msg_target.header.seq += 1
 			pub_target.publish(msg_target)
+			print("Targets= ",target_x,target_y,target_z)
 
 			# --- Timing ---
 			et = rospy.get_time() - t
