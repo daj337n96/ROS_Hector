@@ -92,8 +92,8 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 			print('hector motion o= ',msg_motion.o)
 			print('-----Turtle Motion-----')
 			print('turtle motion x= ',turtle_motion.x)
-			print('turtle motion y ',turtle_motion.y)
-			print('turtle stop value = ',turtle_stop)
+			print('turtle motion y= ',turtle_motion.y)
+			print('turtle stop value= ',turtle_stop)
 			print('-----Current State-----')
 			# check if close enough to targets and goals with CLOSE_ENOUGH
 			if check_distance:# check if close enough to target
