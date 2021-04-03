@@ -69,6 +69,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 	rospy.Subscriber('/turtle/stop', Bool, subscribe_turtle_stop, queue_size=1)
 	rospy.Subscriber('/hector/sonar_height', Range, subscribe_sonar, queue_size=1)
 	
+	STATES = True
 	state = STATE_TAKEOFF
 	check_distance = False
 	need_trajectory = False
@@ -106,12 +107,14 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 				if Di*Di + Dj*Dj + Dk*Dk<= CLOSE_ENOUGH_SQ:# if target reached
 					if state == STATE_TAKEOFF:
 						state = STATE_TURTLE
+						STATES = True # go back to STATES to update targets etc
 						check_distance = False
 					elif turtle_stop == False:
 						if state == STATE_TURTLE:
 							state = STATE_GOAL
 						elif state == STATE_GOAL:
 							state = STATE_TURTLE
+						STATES = True
 						check_distance = False
 					elif turtle_stop == True: 
 						if state == STATE_GOAL:
@@ -120,6 +123,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 							state = STATE_BASE
 						elif state == STATE_BASE:
 							state = STATE_LAND
+						STATES = True
 						check_distance = False
 
 			if need_trajectory: # target seperation
@@ -140,39 +144,41 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 
 				need_trajectory = False # it will now be published 
 				check_distance = True # and check distance will be done next
-							
-			# use STATE_... constants for states
-			if state == STATE_TAKEOFF: # takeoff from hector's base
-				print('state = STATE TAKEOFF')
-				target_x = sx
-				target_y = sy
-				target_z = CRUISE_ALTITUDE
-				# get trajectory first before checking distance & proceeding to other states
-				need_trajectory = True
-			elif state == STATE_TURTLE: # fly to turtle
-				print('state = STATE_TURTLE')
-				target_x = turtle_motion.x 
-				target_y = turtle_motion.y
-				target_z = CRUISE_ALTITUDE
-				need_trajectory = True 
-			elif state == STATE_GOAL: # fly to turtle's end goal
-				print('state = STATE_GOAL')
-				target_x = gx
-				target_y = gy
-				target_z = CRUISE_ALTITUDE
-				need_trajectory = True
-			elif state == STATE_BASE: # fly to hector's base
-				print('state = STATE_BASE')
-				target_x = sx
-				target_y = sy
-				target_z = CRUISE_ALTITUDE
-				need_trajectory = True
-			elif state == STATE_LAND: # land at hector's base
-				print('state = STATE_LAND')
-				target_x = sx
-				target_y = sy
-				target_z = 0
-				need_trajectory = True
+				STATES = False # enter publish, skipping the states
+		
+			if STATES:							
+				# use STATE_... constants for states
+				if state == STATE_TAKEOFF: # takeoff from hector's base
+					print('state = STATE TAKEOFF')
+					target_x = sx
+					target_y = sy
+					target_z = CRUISE_ALTITUDE
+					# get trajectory first before checking distance & proceeding to other states
+					need_trajectory = True
+				elif state == STATE_TURTLE: # fly to turtle
+					print('state = STATE_TURTLE')
+					target_x = turtle_motion.x 
+					target_y = turtle_motion.y
+					target_z = CRUISE_ALTITUDE
+					need_trajectory = True 
+				elif state == STATE_GOAL: # fly to turtle's end goal
+					print('state = STATE_GOAL')
+					target_x = gx
+					target_y = gy
+					target_z = CRUISE_ALTITUDE
+					need_trajectory = True
+				elif state == STATE_BASE: # fly to hector's base
+					print('state = STATE_BASE')
+					target_x = sx
+					target_y = sy
+					target_z = CRUISE_ALTITUDE
+					need_trajectory = True
+				elif state == STATE_LAND: # land at hector's base
+					print('state = STATE_LAND')
+					target_x = sx
+					target_y = sy
+					target_z = 0
+					need_trajectory = True
 				
 			# --- Publish state ---
 			msg_state.data = state
