@@ -61,7 +61,14 @@ def subscribe_stop(msg):
     
 class EKF:
     def __init__(self,x,y,z,o):
-	self.x = x # X(k|k-1)
+	self.x = x  
+ 	self.y = y 
+	self.z = z
+	self.o = o
+	
+class SENSOR:
+    def __init__(self,x,y,z,o):
+	self.x = x  
  	self.y = y 
 	self.z = z
 	self.o = o
@@ -143,21 +150,40 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         # EKF S.S Model:  PROCESS = [[0,0], [0,0]]*[[P_k-1], [V_k-1]] + [[0], [0]]*(a + sigma_w)
         #                 MEASUREMENT = [1, 0]*[[P], [V]] + sigma_v 
 
-	delta_t = ITERATION_PERIOD
-	a_w = 1
-	kalman_gainK = 0 # kf(k)
-	sigma_W = array([[0.5*delta_t*delta_t], [delta_t]])
+		delta_t = ITERATION_PERIOD
+		a_w = 1
+		Gain_K = 0 # kf(k)
+		sigma_W = array([[0.5*delta_t*delta_t], [delta_t]])
+		H_K = [1,0]
+		H_K_t = transpose([1,0])
+		F_k = [[1, delta_t], [0, 1]]
 
-	# --- EKF inits ---
-	#		 = EKF( [X],       [Y],       [Z],       [O]     )
-	process	  	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # process/transition model(F matrix) # 2x2
-	measured  	 = EKF(0, 0, 0, 0) # measurement model (measurement 'Y')
+		# --- EKF inits ---
+		#		 	 = EKF( [X],       [Y],        [Z],        [O]       )
+		process	  	 = EKF([[0], [0]], [[0], [0]], [[0], [0]], [[0], [0]]) # process/transition model # 2x1
+		measured  	 = EKF(0, 0, 0, 0) # measurement model (measurement 'Y') # 1x1
 
-	predicted 	 = EKF([[0],[0]], [[0],[0]], [[0],[0]], [[0],[0]]) # X(k|k-1) # 2x1
-	previous  	 = EKF([[0],[0]], [[0],[0]], [[0],[0]], [[0],[0]]) # X(k-1) # 2x1
-	predicted_covar  = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # P(k|k-1) # 2x2
-	filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # 2x2
+		predicted 	 = EKF([[0],[0]], [[0],[0]], [[0],[0]], [[0],[0]]) # X(k|k-1) # 2x1
+		previous  	 = EKF([[0],[0]], [[0],[0]], [[0],[0]], [[0],[0]]) # X(k-1) # 2x1
+		predicted_covar  = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # P(k|k-1) # 2x2
+		filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k|k) # 2x2
+		prev_filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k-1|k-1) # 2x2 # hold the value for predicted_covar
+		
+		# --- Sensors inits ---
+		Vk = [1]
+		Vk_t = transpose([1])
+        # Magnetic compass
+        R_MAG  = SENSOR([0], [0], [0]) # 1x1
+        K_MAG  = SENSOR([[0], [0]], [[0],[0]], [[0], [0]]) # 2x1
         
+        # GPS
+        R_GPS  = SENSOR([0], [0], [0])
+        K_GPS  = SENSOR([[0], [0]], [[0],[0]], [[0], [0]])
+        
+        # Barometer		
+		R_BARO = SENSOR([0], [0], [0])
+		K_BARO = SENSOR([[0], [0]], [[0],[0]], [[0], [0]])
+				  
         # always initialise arrays in two dimensions using [[ . ]]:
         # e.g. X = array([[rx0], [0.]]) # see above for rx0
         # e.g. Px = [[0, 0], [0, 0]]
@@ -167,73 +193,81 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         t = rospy.get_time()
         while not rospy.is_shutdown() and not msg_stop: #msg_master.stop:
             if rospy.get_time() > t:
-        	# Do separate channels for x,y,z,o --> 4 channels in total        
-			# Not sure if the noise should be different for each channel
+            	
+		    	# Do separate channels for x,y,z,o --> 4 channels in total        
+				# Not sure if the noise should be different for each channel
 			
-			# --- EKF process for x, y, z, o ---
-			process.x = matmul([[1, delta_t], [0, 1]], previous.x) + sigma_W * a_w
-			process.y = matmul([[1, delta_t], [0, 1]], previous.y) + sigma_W * a_w
-			process.z = matmul([[1, delta_t], [0, 1]], previous.z) + sigma_W * a_w
-			process.o = matmul([[1, delta_t], [0, 1]], previous.o) + sigma_W * a_w
-			'''print("=================================")
-			print("[process_x]" , process.x)'''
-			
-			# --- EKF measurements for x, y, z, o ---
-			measured.x = matmul([1, 0], process.x) #+ sigma_v
-			measured.y = matmul([1, 0], process.y) #+ sigma_v
-			measured.z = matmul([1, 0], process.z) #+ sigma_v
-			measured.o = matmul([1, 0], process.o) #+ sigma_v     
-			'''print("[Measured_x]", measured.x)'''
+				# --- EKF process for x, y, z, o ---
+				process.x = matmul(F_k, previous.x) + sigma_W * a_w
+				process.y = matmul(F_k, previous.y) + sigma_W * a_w
+				process.z = matmul(F_k, previous.z) + sigma_W * a_w
+				process.o = matmul(F_k, previous.o) + sigma_W * a_w
+				'''print("=================================")
+				print("[process_x]" , process.x)'''				
+				# --- EKF measurements for x, y, z, o ---
+				measured.x = matmul(H_K, process.x) #+ sigma_v
+				measured.y = matmul(H_K, process.y) #+ sigma_v
+				measured.z = matmul(H_K, process.z) #+ sigma_v
+				measured.o = matmul(H_K, process.o) #+ sigma_v     
+				'''print("[Measured_x]", measured.x)'''
 
-		            # --- Prediction: from IMU ---
-		            # x, y, z, o
-			# for x
-			predicted.x[0] = previous.x[0] + array(previous.x[1])* delta_t + 0.5*a_w*delta_t**2 # for expected P_x(k|k-1)
-			#predicted.x[1] = (previous.x[1]) + a_w*delta_t # for expected V_x(k|k-1)
-			#filtred_covar.x = matmul((previous.x-predicted.x), trasnpose(previous.x-predicted.x))
-			#predicted_covar.x = matmul(process.x,filtred_covar.x,transpose(process.x)) + matmul(sigma_W, transpose(sigma_W))*IMU_NX # varinace = covariance since only 1 param
-			'''print("=================================")
-			print("[predicted_x] ", predicted.x)
-			print("[previous_x] ", previous.x)
-			print("					")'''
+		        # --- Prediction: from IMU ---
+		        # x, y, z, o
+				# for x
+				predicted.x[0] = previous.x[0] + array(previous.x[1])* delta_t + 0.5*a_w*delta_t**2 # for expected P_x(k|k-1)
+				#predicted.x[1] = (previous.x[1]) + a_w*delta_t # for expected V_x(k|k-1)
+				
+				prev_filtred_covar.x = filtred_covar.x # hand over before filtred_covar.x is updated 
+				predicted_covar.x = matmul(process.x, prev_filtred_covar.x, transpose(process.x)) + matmul(sigma_W, transpose(sigma_W))*IMU_NX # variance = covariance since only 1 param
+				filtred_covar.x = predicted_covar.x - matmul(K_k, H_K, predicted_covar.x) # update filtred_covar.x with new predicted_covar.x
+				'''print("=================================")
+				print("[predicted_x] ", predicted.x)
+				print("[previous_x] ", previous.x)
+				print("					")'''
 
-            # previous_x = take from subscribed rbt_imu[0] 
-            # previous_z = rbt_imu[1] 
-            # previous_y = rbt_imu[2] 
-            # previous_o = rbt_magnet_x/y for position, rbt_imu[3] for speed 
-            pass
-            
-            # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
-            # separately and when available
-            pass
-            
-            #for i in range(10):
-                # --- Publish motion ---
-        	msg_motion.x = rbt_true[0] # m
-        	msg_motion.y = rbt_true[1] # m
-        	msg_motion.z = rbt_true[2] # m
-        	msg_motion.o = rbt_true[3] # orientation in z (rad)
-        	pub_motion.publish(msg_motion)
-            
-            # publish results to rviz
-            msg_pose_position.x = msg_motion.x
-            msg_pose_position.y = msg_motion.y
-            msg_pose_position.z = msg_motion.z
-            tmp = quaternion_from_euler(0, 0, msg_motion.o)
-            msg_pose_orientation.x = tmp[0]
-            msg_pose_orientation.y = tmp[1]
-            msg_pose_orientation.z = tmp[2]
-            msg_pose_orientation.w = tmp[3]
-            pub_pose.publish(msg_pose)
-            
-            '''print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
-            print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)'''
-            # --- Iterate ---
-            et = rospy.get_time() - t
-            t += ITERATION_PERIOD
-            if et > ITERATION_PERIOD:
-                print('[HEC MOTION] {}ms OVERSHOOT'.format(int(et*1000)))
-                    
+		        pass
+		        
+		        # --- Correction: incorporate measurements from GPS, Baro (altimeter) and Compass ---
+		        # separately and when available
+		        
+		        # Magnetic compass
+		        K_MAG.x = matmul( matmul(predicted_covar.x, H_K_t), (matmul(H_K, predicted_covar.x, H_K_t) + (Vk*R_MAG*Vk_t))**-1 )
+		        
+		        # GPS
+		        K_GPS.x = matmul( matmul(predicted_covar.x, H_K_t), (matmul(H_K, predicted_covar.x, H_K_t) + (Vk*R_MAG*Vk_t))**-1 )
+		        
+		        # Barometer
+		        K_BARO.x = matmul( matmul(predicted_covar.x, H_K_t), (matmul(H_K, predicted_covar.x, H_K_t) + (Vk*R_MAG*Vk_t))**-1 )
+		        
+		        pass
+		        
+		        #for i in range(10):
+		        # --- Publish motion ---
+		    	msg_motion.x = rbt_true[0] # m
+		    	msg_motion.y = rbt_true[1] # m
+		    	msg_motion.z = rbt_true[2] # m
+		    	msg_motion.o = rbt_true[3] # orientation in z (rad)
+		    	pub_motion.publish(msg_motion)
+		        
+		        # publish results to rviz
+		        msg_pose_position.x = msg_motion.x
+		        msg_pose_position.y = msg_motion.y
+		        msg_pose_position.z = msg_motion.z
+		        tmp = quaternion_from_euler(0, 0, msg_motion.o)
+		        msg_pose_orientation.x = tmp[0]
+		        msg_pose_orientation.y = tmp[1]
+		        msg_pose_orientation.z = tmp[2]
+		        msg_pose_orientation.w = tmp[3]
+		        pub_pose.publish(msg_pose)
+		        
+		        '''print(msg_pose_position.x, msg_pose_position.y, msg_pose_position.z)
+		        print(msg_pose_orientation.x ,msg_pose_orientation.y ,msg_pose_orientation.z ,msg_pose_orientation.w)'''
+		        # --- Iterate ---
+		        et = rospy.get_time() - t
+		        t += ITERATION_PERIOD
+		        if et > ITERATION_PERIOD:
+		            print('[HEC MOTION] {}ms OVERSHOOT'.format(int(et*1000)))
+		                
                     
         ##########################################################
         
