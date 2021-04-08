@@ -75,6 +75,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 	need_trajectory = False
 	local_targets_x = 0
 	local_targets_y = 0
+	local_targets_z = 0
 	
 	while (height is None or msg_motion is None or turtle_stop is None or \
 		turtle_motion is None or rospy.get_time() == 0) and not rospy.is_shutdown():
@@ -125,6 +126,20 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 							state = STATE_LAND
 						STATES = True
 						check_distance = False
+				else:
+					local_targets_x += Di
+					local_targets_y += Dj
+					local_targets_z += Dk
+					# --- Publish state ---
+					msg_state.data = state
+					pub_state.publish(msg_state)
+					# --- Publish target ---
+					msg_target_position.x = target_x
+					msg_target_position.y = target_y
+					msg_target_position.z = target_z
+					msg_target.header.seq += 1
+					pub_target.publish(msg_target)
+					print("Targets= ",target_x,target_y,target_z)
 
 			if need_trajectory: # target seperation
 				Di = target_x - msg_motion.x
@@ -138,13 +153,24 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 				# local target is incremented which would be given to target_x/y to publish
 				local_targets_x += Di
 				local_targets_y += Dj
-				# target is now the local target 
+				local_targets_z += Dk
+				'''# target is now the local target 
 				target_x = local_targets_x
-				target_y = local_targets_y
+				target_y = local_targets_y'''
+				# --- Publish state ---
+				msg_state.data = state
+				pub_state.publish(msg_state)
+				# --- Publish target ---
+				msg_target_position.x = target_x
+				msg_target_position.y = target_y
+				msg_target_position.z = target_z
+				msg_target.header.seq += 1
+				pub_target.publish(msg_target)
+				print("Targets= ",target_x,target_y,target_z)
 
 				need_trajectory = False # it will now be published 
-				check_distance = True # and check distance will be done next
 				STATES = False # enter publish, skipping the states
+				check_distance = True # and check distance will be done next
 		
 			if STATES:							
 				# use STATE_... constants for states
@@ -153,8 +179,18 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 					target_x = sx
 					target_y = sy
 					target_z = CRUISE_ALTITUDE
+					# --- Publish state ---
+					msg_state.data = state
+					pub_state.publish(msg_state)
+					# --- Publish target ---
+					msg_target_position.x = target_x
+					msg_target_position.y = target_y
+					msg_target_position.z = target_z
+					msg_target.header.seq += 1
+					pub_target.publish(msg_target)
+					print("Targets= ",target_x,target_y,target_z)
 					# get trajectory first before checking distance & proceeding to other states
-					need_trajectory = True
+					check_distance = True
 				elif state == STATE_TURTLE: # fly to turtle
 					print('state = STATE_TURTLE')
 					target_x = turtle_motion.x 
@@ -180,7 +216,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 					target_z = 0
 					need_trajectory = True
 				
-			# --- Publish state ---
+			'''# --- Publish state ---
 			msg_state.data = state
 			pub_state.publish(msg_state)
 
@@ -190,7 +226,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 			msg_target_position.z = target_z
 			msg_target.header.seq += 1
 			pub_target.publish(msg_target)
-			print("Targets= ",target_x,target_y,target_z)
+			print("Targets= ",target_x,target_y,target_z)'''
 
 			# --- Timing ---
 			et = rospy.get_time() - t
