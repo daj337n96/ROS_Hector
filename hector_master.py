@@ -126,7 +126,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 							state = STATE_LAND
 						STATES = True
 						check_distance = False
-				else:
+				else: # if not close yet then keep increasing towards target, check_distance still True
 					local_targets_x += Di
 					local_targets_y += Dj
 					local_targets_z += Dk
@@ -139,7 +139,7 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 					msg_target_position.z = target_z
 					msg_target.header.seq += 1
 					pub_target.publish(msg_target)
-					print("Targets= ",target_x,target_y,target_z)
+					print("Targets= ",local_targets_x,local_targets_z,local_targets_z)
 
 			if need_trajectory: # target seperation
 				Di = target_x - msg_motion.x
@@ -161,16 +161,16 @@ def master(sx=2., sy=2., gx=2., gy=2.):
 				msg_state.data = state
 				pub_state.publish(msg_state)
 				# --- Publish target ---
-				msg_target_position.x = target_x
-				msg_target_position.y = target_y
-				msg_target_position.z = target_z
+				msg_target_position.x = local_targets_x
+				msg_target_position.y = local_targets_y
+				msg_target_position.z = local_targets_z
 				msg_target.header.seq += 1
 				pub_target.publish(msg_target)
-				print("Targets= ",target_x,target_y,target_z)
-
-				need_trajectory = False # it will now be published 
-				STATES = False # enter publish, skipping the states
-				check_distance = True # and check distance will be done next
+				print("Targets= ",local_targets_x,local_targets_z,local_targets_z)
+				# publish alrd then check distance
+				need_trajectory = False 
+				STATES = False 
+				check_distance = True 
 		
 			if STATES:							
 				# use STATE_... constants for states
