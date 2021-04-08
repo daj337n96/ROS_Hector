@@ -38,10 +38,10 @@ def subscribe_gps(msg):
 rbt_imu = [False, False, False, False]
 def subscribe_imu(msg):
     tmp = msg.linear_acceleration
-    rbt_imu[0] = tmp.x
+    rbt_imu[0] = tmp.x # accel
     rbt_imu[1] = tmp.y
     rbt_imu[2] = tmp.z
-    rbt_imu[3] = msg.angular_velocity.z
+    rbt_imu[3] = msg.angular_velocity.z # gyro
     
 rbt_magnet = [False, False, False]
 def subscribe_magnetic(msg):
@@ -169,7 +169,14 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
 	predicted_covar  = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # P(k|k-1) # 2x2
 	filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k|k) # 2x2
 	prev_filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k-1|k-1) # 2x2 # hold the value for predicted_covar
-		
+	
+	# --- Noise inits ---
+	a_w = EKF(0,0,0)
+	a_w.x = rbt_imu[0]
+	a_w.y = rbt_imu[1]
+	a_w.z = rbt_imu[2]
+	a_w.o = rbt_imu[3] # noise is from gyro hwich is angular_vel
+	
 	# --- Sensors inits ---
 	Vk = [1]
 	Vk_t = transpose([1])
@@ -196,10 +203,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
 		# Not sure if the noise should be different for each channel
 
 		# --- EKF process for x, y, z, o ---
-		process.x = matmul(F_k, previous.x) + sigma_W * a_w
-		process.y = matmul(F_k, previous.y) + sigma_W * a_w
-		process.z = matmul(F_k, previous.z) + sigma_W * a_w
-		process.o = matmul(F_k, previous.o) + sigma_W * a_w
+		process.x = matmul(F_k, previous.x) + sigma_W * a_w.x
+		process.y = matmul(F_k, previous.y) + sigma_W * a_w.y
+		process.z = matmul(F_k, previous.z) + sigma_W * a_w.z
+		process.o = matmul(F_k, previous.o) + sigma_W * a_w.o
 		'''print("=================================")
 		print("[process_x]" , process.x)'''				
 		# --- EKF measurements for x, y, z, o ---
@@ -209,10 +216,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
 		measured.o = matmul(H_K, process.o) #+ sigma_v     
 		'''print("[Measured_x]", measured.x)'''
 
-		# --- Prediction: from IMU ---
+		# --- Prediction: from IMU (accel & gyro)---
 		# x, y, z, o
 		# for x
-		predicted.x = matmul(F_k, previous.x) + sigma_W * a_w # state prediction X(k|k-1)
+		predicted.x = matmul(F_k, previous.x) + sigma_W * a_w.x # state prediction X(k|k-1)
 		#predicted.x[0] = previous.x[0] + array(previous.x[1])* delta_t + 0.5*a_w*delta_t**2 # for expected P_x(k|k-1)
 		#predicted.x[1] = (previous.x[1]) + a_w*delta_t # for expected V_x(k|k-1)
 
