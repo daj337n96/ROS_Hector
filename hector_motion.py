@@ -150,12 +150,13 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         # EKF S.S Model:  PROCESS = [[0,0], [0,0]]*[[P_k-1], [V_k-1]] + [[0], [0]]*(a + sigma_w)
         #                 MEASUREMENT = [1, 0]*[[P], [V]] + sigma_v 
 	delta_t = ITERATION_PERIOD
-	a_w = 1
+	#a_w = 1
 	Gain_K = 0 # kf(k)
 	sigma_W = array([[0.5*delta_t*delta_t], [delta_t]])
 	H_K = [1,0]
 	H_K_t = transpose([1,0])
 	F_k = [[1, delta_t], [0, 1]]
+	F_K_t = transpose([[1, delta_t], [0, 1]])
 
 	# --- EKF inits ---
 	# always initialise arrays in two dimensions using [[ . ]]:
@@ -170,7 +171,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
 	filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k|k) # 2x2
 	prev_filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k-1|k-1) # 2x2 # hold the value for predicted_covar
 	
-	# --- Noise inits ---
+	# --- a_w inits ---
 	a_w = EKF(0,0,0)
 	a_w.x = rbt_imu[0]
 	a_w.y = rbt_imu[1]
