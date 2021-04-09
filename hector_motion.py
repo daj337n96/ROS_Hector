@@ -172,7 +172,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
 	prev_filtred_covar	 = EKF([[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]], [[0, 0],[0, 0]]) # (k-1|k-1) # 2x2 # hold the value for predicted_covar
 	
 	# --- a_w inits ---
-	a_w = EKF(0,0,0)
+	a_w = EKF(0,0,0,0)
 	a_w.x = rbt_imu[0]
 	a_w.y = rbt_imu[1]
 	a_w.z = rbt_imu[2]
@@ -225,7 +225,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
 		#predicted.x[1] = (previous.x[1]) + a_w*delta_t # for expected V_x(k|k-1)
 
 		prev_filtred_covar.x = filtred_covar.x # filtered covariance now = previous filtered covariance --> start from 0 
-		predicted_covar.x = matmul(process.x, prev_filtred_covar.x, transpose(process.x)) + matmul(sigma_W, transpose(sigma_W))*IMU_NX # variance = covariance since only 1 param
+		predicted_covar.x = matmul(F_k, prev_filtred_covar.x, F_K_t) + matmul(sigma_W, transpose(sigma_W))*IMU_NX # variance = covariance since only 1 param
 		filtred_covar.x = predicted_covar.x - matmul(K_k, H_K, predicted_covar.x) # update filtred_covar.x with new predicted_covar.x
 		'''print("=================================")
 		print("[predicted_x] ", predicted.x)
