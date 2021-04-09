@@ -65,11 +65,14 @@ def global2robot(): # GPS_Z = rbt_gps[0], h = rbt_gps[2]
 	e = 1 - (BSquare/ASquare)
 	N = RAD_EQUATOR/(sqrt(1-e*e*sin(rbt_gps[0])*sin(rbt_gps[0])))
 	
+	Xe = (N + rbt_gps[2]) * cos(rbt_gps[1]) * cos(rbt_gps[0])
+	Ye = (N + rbt_gps[2]) * cos(rbt_gps[1]) * cos(rbt_gps[0])
 	Ze = ((BSquare/ASquare)*(N) + rbt_gps[2])* sin(rbt_gps[0])
 	
+	GPS_array = [[Xe] , [Ye], [Ze]]
 	#N = RAD_EQUATOR / sqrt (1-((1- (BSqaure / ASquare))**2 *sin**2* GPS_Z))
 	#Ze = ((RAD_POLAR**2 / RAD_EQUATOR**2) * N + rbt_gps[2]) * sin(GPS_Z)
-	return Ze
+	return GPS_array
 	
 
 
