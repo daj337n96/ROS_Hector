@@ -220,6 +220,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         prev_filtred_covar	 = EKF(array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]])) # P(k-1|k-1) # 2x2 # hold the value for predicted_covar
         
         filtered_state  	 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # X(k|k) # 2x1
+	prev_filtred_state	 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # X(k-1|k-1) # 2x1 
         
         '''# --- Noise inits ---
         a_w = EKF(0,0,0,0)
@@ -296,10 +297,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 
                 # --- Equation A ---
                         # state prediction X(k|k-1)
-                predicted.x = matmul(F_k, previous.x) + sigma_W * a_w.x 
-                predicted.y = matmul(F_k, previous.y) + sigma_W * a_w.y
-                predicted.z = matmul(F_k, previous.z) + sigma_W * a_w.z 
-                predicted.o = matmul(F_k_o, previous.o) + sigma_W_o * a_w.o # need to change sigma_W for o
+                predicted.x = matmul(F_k, prev_filtred_state.x) + sigma_W * a_w.x 
+                predicted.y = matmul(F_k, prev_filtred_state.y) + sigma_W * a_w.y
+                predicted.z = matmul(F_k, prev_filtred_state.z) + sigma_W * a_w.z 
+                predicted.o = matmul(F_k_o, prev_filtred_state.o) + sigma_W_o * a_w.o # need to change sigma_W for o
                 print("predicted: ", predicted.x[0], predicted.y[0], predicted.z[0], predicted.o[0])  
                 
                 # --- Equation B ---
@@ -340,15 +341,9 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 # --- Update ---
                         # update the previous filtered covariance as filtered covariance to prep for nect loop
                         # filtered covariance --> start from 0 
-                prev_filtred_covar.x = filtred_covar.x # can prev_filtred_covar = filtred_covar don't need .x.y.z.o
-                prev_filtred_covar.y = filtred_covar.y 
-                prev_filtred_covar.z = filtred_covar.z 
-                prev_filtred_covar.o = filtred_covar.o 
-                
-                previous.x = process.x # update the process model
-                previous.y = process.y 
-                previous.z = process.z 
-                previous.o = process.o 
+                previous = process # update the process model
+                prev_filtred_covar = filtred_covar # can prev_filtred_covar = filtred_covar don't need .x.y.z.o
+                prev_filtred_state = filtred_state # update the filtered state
                 print("Filtered_state: ", filtered_state.x[0], filtered_state.y[0], filtered_state.z[0], filtered_state.o[0])
                 print("msg_motion: ", msg_motion.x, msg_motion.y, msg_motion.z, rbt_true[3])                 
                 print("\n=============================================================")           
