@@ -215,12 +215,12 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         predicted 	 	 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # X(k|k-1) # 2x1
         previous  		 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # previous process X(k-1) # 2x1
         # Covariances initialise as 0
-        filtred_covar		 = EKF(array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]])) # P(k|k) # 2x2
+        filtered_covar		 = EKF(array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]])) # P(k|k) # 2x2
         predicted_covar  	 = EKF(array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]])) # P(k|k-1) # 2x2
-        prev_filtred_covar	 = EKF(array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]])) # P(k-1|k-1) # 2x2 # hold the value for predicted_covar
+        prev_filtered_covar	 = EKF(array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]]), array([[0, 0],[0, 0]])) # P(k-1|k-1) # 2x2 # hold the value for predicted_covar
         
         filtered_state  	 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # X(k|k) # 2x1
-	prev_filtred_state	 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # X(k-1|k-1) # 2x1 
+	    prev_filtered_state	 = EKF(array([[0], [0]]), array([[0], [0]]), array([[0], [0]]), array([[0], [0]])) # X(k-1|k-1) # 2x1 
         
         '''# --- Noise inits ---
         a_w = EKF(0,0,0,0)
@@ -253,25 +253,25 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
         t = rospy.get_time()
         while not rospy.is_shutdown() and not msg_stop: #msg_master.stop:
             if rospy.get_time() > t:
-    	        # --- Noise inits ---
-		a_w = EKF(0,0,0,0)
-		a_w.x = rbt_imu[0]
-		a_w.y = rbt_imu[1]
-		a_w.z = rbt_imu[2]
-		a_w.o = rbt_imu[3] # noise is from gyro which is angular_vel
-		
-            	#et = rospy.get_time() - t
+                # --- Noise inits ---
+                a_w = EKF(0,0,0,0)
+                a_w.x = rbt_imu[0]
+                a_w.y = rbt_imu[1]
+                a_w.z = rbt_imu[2]
+                a_w.o = rbt_imu[3] # noise is from gyro which is angular_vel
+                
+                #et = rospy.get_time() - t
                 # Do separate channels for x,y,z,o --> 4 channels in total        
-		delta_t = ITERATION_PERIOD
-		Gain_K = EKF(array([[0],[0]]), array([[0],[0]]), array([[0],[0]]), array([[0],[0]]))# kf(k)
-        	sigma_W = array([[0.5*delta_t*delta_t], [delta_t]])
-        	sigma_W_o = array([[delta_t], [1]])
-		H_K = array([[1,0]])
-		H_K_t = transpose(H_K)
-		F_k = array([[1, delta_t], [0, 1]])
-		F_k_t = transpose(F_k)
-		F_k_o = array([[1, 0], [0, 0]]) 
-		F_k_o_t = transpose(F_k_o)
+                delta_t = ITERATION_PERIOD
+                Gain_K = EKF(array([[0],[0]]), array([[0],[0]]), array([[0],[0]]), array([[0],[0]]))# kf(k)
+                sigma_W = array([[0.5*delta_t*delta_t], [delta_t]])
+                sigma_W_o = array([[delta_t], [1]])
+                H_K = array([[1,0]])
+                H_K_t = transpose(H_K)
+                F_k = array([[1, delta_t], [0, 1]])
+                F_k_t = transpose(F_k)
+                F_k_o = array([[1, 0], [0, 0]]) 
+                F_k_o_t = transpose(F_k_o)
 		
 		
                 # --- EKF Process for x, y, z, o ---
@@ -281,7 +281,7 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 process.o = matmul(F_k_o, previous.o) + sigma_W_o * a_w.o # heading is not acc so edited model			
                 	
                 # --- EKF Measurements for x, y, z, o --- # from gps & mag
-		#print("global2ECEF: " + str(global2ECEF(rbt_gps[0],rbt_gps[1],rbt_gps[2])))
+                #print("global2ECEF: " + str(global2ECEF(rbt_gps[0],rbt_gps[1],rbt_gps[2])))
                 gps_robot_frame = ECEF2MAP(ECEF_initial, MAP_initial) # Get GPS in MAP coordinate
                 print("GPS in Robot frame: ", gps_robot_frame[0], gps_robot_frame[1], gps_robot_frame[2])   
                 # Measurement is of the GPS and MAG 
@@ -297,10 +297,10 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                 
                 # --- Equation A ---
                         # state prediction X(k|k-1)
-                predicted.x = matmul(F_k, prev_filtred_state.x) + sigma_W * a_w.x 
-                predicted.y = matmul(F_k, prev_filtred_state.y) + sigma_W * a_w.y
-                predicted.z = matmul(F_k, prev_filtred_state.z) + sigma_W * a_w.z 
-                predicted.o = matmul(F_k_o, prev_filtred_state.o) + sigma_W_o * a_w.o # need to change sigma_W for o
+                predicted.x = matmul(F_k, prev_filtered_state.x) + sigma_W * a_w.x 
+                predicted.y = matmul(F_k, prev_filtered_state.y) + sigma_W * a_w.y
+                predicted.z = matmul(F_k, prev_filtered_state.z) + sigma_W * a_w.z 
+                predicted.o = matmul(F_k_o, prev_filtered_state.o) + sigma_W_o * a_w.o # need to change sigma_W for o
                 print("predicted: ", predicted.x[0], predicted.y[0], predicted.z[0], predicted.o[0])  
                 
                 # --- Equation B ---
@@ -342,8 +342,8 @@ def motion(rx0=2.0, ry0=2.0, rz0 =0.172, ro0=0.0):
                         # update the previous filtered covariance as filtered covariance to prep for nect loop
                         # filtered covariance --> start from 0 
                 previous = process # update the process model
-                prev_filtred_covar = filtred_covar # can prev_filtred_covar = filtred_covar don't need .x.y.z.o
-                prev_filtred_state = filtred_state # update the filtered state
+                prev_filtered_covar = filtered_covar # can prev_filtred_covar = filtred_covar don't need .x.y.z.o
+                prev_filtered_state = filtered_state # update the filtered state
                 print("Filtered_state: ", filtered_state.x[0], filtered_state.y[0], filtered_state.z[0], filtered_state.o[0])
                 print("msg_motion: ", msg_motion.x, msg_motion.y, msg_motion.z, rbt_true[3])                 
                 print("\n=============================================================")           
