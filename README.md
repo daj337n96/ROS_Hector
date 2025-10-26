@@ -16,7 +16,7 @@ Need to settle EKF first
 
 ############################### hector_motion ############################################
 publishes the motion that hector is making
-EKF should comapre taregt with motion to decide actual movement
+EKF should compare target with motion to decide actual movement
 /hector/motion
 /hector/motion_pose for RViz
 
